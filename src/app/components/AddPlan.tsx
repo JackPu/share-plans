@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface AddPlanProps {
   setPlans: React.Dispatch<React.SetStateAction<Plan[]>>;
@@ -39,6 +40,7 @@ interface StockPrice {
 }
 
 export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
+  const { t } = useLanguage();
   const [name, setName] = useState("");
   const [shares, setShares] = useState("");
   const [stockName, setStockName] = useState("");
@@ -114,7 +116,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
       setStockPrice(data);
     } catch (error) {
       console.error("11111 Error fetching stock price:", error);
-      setPriceError("Unable to fetch real-time price");
+      setPriceError(t("unableToFetchPrice"));
     } finally {
       setIsPriceLoading(false);
     }
@@ -132,7 +134,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
     e.preventDefault();
 
     // Auto-generate plan name if empty: stockName + action + shares
-    const planName = name.trim() || `${stockName || stockId} ${action === "buy" ? "Buy" : "Sell"} ${shares}`;
+    const planName = name.trim() || `${stockName || stockId} ${action === "buy" ? t("buy") : t("sell")} ${shares}`;
 
     const newPlan: Plan = {
       name: planName,
@@ -184,7 +186,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">
           <h2 className="text-xl font-semibold text-zinc-900 dark:text-white">
-            Add New Plan
+            {t("addNewPlan")}
           </h2>
           <button
             onClick={handleClose}
@@ -203,13 +205,13 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
             <div className="grid grid-cols-2 gap-4">
               <div className="relative" ref={suggestionRef}>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Stock Name
+                  {t("stockName")}
                 </label>
                 <div className="relative">
                   <input
                     type="text"
                     className="w-full px-4 py-2.5 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    placeholder="Search stocks..."
+                    placeholder={t("searchStocks")}
                     value={stockName}
                     onChange={(e) => {
                       setStockName(e.target.value);
@@ -256,7 +258,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Stock Symbol
+                  {t("stockSymbol")}
                 </label>
                 <input
                   type="text"
@@ -277,7 +279,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    <span className="text-sm">Fetching real-time price...</span>
+                    <span className="text-sm">{t("fetchingPrice")}</span>
                   </div>
                 ) : priceError ? (
                   <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
@@ -290,7 +292,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="text-xs text-zinc-500 dark:text-zinc-400 mb-1">
-                        Current Price ({stockPrice.symbol})
+                        {t("currentPrice")} ({stockPrice.symbol})
                       </div>
                       <div className="flex items-baseline gap-2">
                         <span className="text-2xl font-bold text-zinc-900 dark:text-white">
@@ -318,7 +320,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Target Price ($)
+                  {t("targetPrice")}
                 </label>
                 <input
                   type="number"
@@ -338,7 +340,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
                       const isPositive = percentChange >= 0;
                       return (
                         <div className={`mt-2 text-sm font-medium ${isPositive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                          {isPositive ? '↑' : '↓'} {isPositive ? '+' : ''}{percentChange.toFixed(2)}% from current price
+                          {isPositive ? '↑' : '↓'} {isPositive ? '+' : ''}{percentChange.toFixed(2)}% {t("fromCurrentPrice")}
                         </div>
                       );
                     }
@@ -348,7 +350,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Deadline
+                  {t("deadline")}
                 </label>
                 <input
                   type="date"
@@ -363,7 +365,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Action
+                  {t("action")}
                 </label>
                 <div className="flex rounded-lg border border-zinc-300 dark:border-zinc-600 overflow-hidden">
                   <button
@@ -375,7 +377,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
                     }`}
                     onClick={() => setAction("buy")}
                   >
-                    Buy
+                    {t("buy")}
                   </button>
                   <button
                     type="button"
@@ -386,13 +388,13 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
                     }`}
                     onClick={() => setAction("sell")}
                   >
-                    Sell
+                    {t("sell")}
                   </button>
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Shares
+                  {t("shares")}
                 </label>
                 <input
                   type="number"
@@ -408,12 +410,12 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
             {/* Plan Name (optional) */}
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                Plan Name <span className="text-zinc-400 font-normal">(optional)</span>
+                {t("planName")} <span className="text-zinc-400 font-normal">{t("planNameOptional")}</span>
               </label>
               <input
                 type="text"
                 className="w-full px-4 py-2.5 rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                placeholder="Auto-generated if empty"
+                placeholder={t("autoGenerated")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
@@ -427,13 +429,13 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
               onClick={handleClose}
               className="flex-1 px-4 py-2.5 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
             >
-              Cancel
+              {t("cancel")}
             </button>
             <button
               type="submit"
               className="flex-1 px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition-colors"
             >
-              Add Plan
+              {t("addPlan")}
             </button>
           </div>
         </form>
