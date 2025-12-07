@@ -1,0 +1,15 @@
+{
+    // 指定用于主要 AI 交互的默认模型
+    "cursor.defaultModel": "gemini-2.5-pro",
+
+    // 如果 Cursor 区分代码和聊天模型，也可能需要配置以下项:
+    "cursor.chat.defaultModel": "gemini-2.5-pro",
+    "cursor.code.defaultModel": "gemini-2.5-pro",
+
+    // 如果您使用的是自定义 API 或本地模型，配置会更复杂
+    "cursor.modelMap": {
+        "chat": "gemini-2.5-pro",
+        "code": "gemini-2.5-pro",
+        // 确保没有其他配置项指向默认的 Anthropic 或 Llama 模型
+    }
+}
