@@ -109,6 +109,12 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
       const response = await fetch(`/api/stocks/price?symbol=${encodeURIComponent(symbol)}`);
       const data = await response.json();
 
+      // Check if price is unavailable
+      if (data.unavailable || data.price === 0) {
+        setPriceError(t("unableToFetchPrice"));
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(data.error || "Failed to fetch price");
       }

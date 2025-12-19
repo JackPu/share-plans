@@ -54,6 +54,38 @@ const LOCAL_STOCKS = [
   { symbol: "3968.HK", name: "CMB 招商银行", exchange: "HKEX" },
   { symbol: "2319.HK", name: "Mengniu 蒙牛乳业", exchange: "HKEX" },
   { symbol: "9961.HK", name: "Trip.com 携程集团", exchange: "HKEX" },
+  // More Hong Kong Tech & AI
+  { symbol: "6682.HK", name: "4Paradigm 第四范式", exchange: "HKEX" },
+  { symbol: "2013.HK", name: "Weimob 微盟集团", exchange: "HKEX" },
+  { symbol: "6060.HK", name: "ZhongAn Online 众安在线", exchange: "HKEX" },
+  { symbol: "1833.HK", name: "Ping An Healthcare 平安好医生", exchange: "HKEX" },
+  { symbol: "0772.HK", name: "China Literature 阅文集团", exchange: "HKEX" },
+  { symbol: "6618.HK", name: "JD Health 京东健康", exchange: "HKEX" },
+  { symbol: "2382.HK", name: "Sunny Optical 舜宇光学", exchange: "HKEX" },
+  { symbol: "0241.HK", name: "Alibaba Health 阿里健康", exchange: "HKEX" },
+  { symbol: "3888.HK", name: "Kingsoft 金山软件", exchange: "HKEX" },
+  { symbol: "1347.HK", name: "Hua Hong Semi 华虹半导体", exchange: "HKEX" },
+  { symbol: "2018.HK", name: "AAC Technologies AAC科技", exchange: "HKEX" },
+  { symbol: "6969.HK", name: "Smoore 思摩尔国际", exchange: "HKEX" },
+  { symbol: "9698.HK", name: "GDS Holdings 万国数据", exchange: "HKEX" },
+  { symbol: "9926.HK", name: "Akeso 康方生物", exchange: "HKEX" },
+  { symbol: "1877.HK", name: "Junshi Bio 君实生物", exchange: "HKEX" },
+  { symbol: "6185.HK", name: "CanSino Bio 康希诺生物", exchange: "HKEX" },
+  { symbol: "9992.HK", name: "Pop Mart 泡泡玛特", exchange: "HKEX" },
+  { symbol: "9987.HK", name: "Yum China 百胜中国", exchange: "HKEX" },
+  { symbol: "1919.HK", name: "COSCO Shipping 中远海控", exchange: "HKEX" },
+  { symbol: "0020.HK", name: "SenseTime 商汤科技", exchange: "HKEX" },
+  { symbol: "2252.HK", name: "Mihoyo 米哈游", exchange: "HKEX" },
+  { symbol: "9660.HK", name: "Lufax 陆金所", exchange: "HKEX" },
+  { symbol: "1691.HK", name: "JS Global 九阳股份", exchange: "HKEX" },
+  { symbol: "6699.HK", name: "Angelalign 时代天使", exchange: "HKEX" },
+  { symbol: "1579.HK", name: "Yihai Kerry 益海嘉里", exchange: "HKEX" },
+  { symbol: "2150.HK", name: "Nayuki 奈雪的茶", exchange: "HKEX" },
+  { symbol: "9922.HK", name: "Jiumaojiu 九毛九", exchange: "HKEX" },
+  { symbol: "9995.HK", name: "RemeGen 荣昌生物", exchange: "HKEX" },
+  { symbol: "1772.HK", name: "Ganfeng Lithium 赣锋锂业", exchange: "HKEX" },
+  { symbol: "1958.HK", name: "BAIC Motor 北汽蓝谷", exchange: "HKEX" },
+  { symbol: "2359.HK", name: "WuXi AppTec 药明康德", exchange: "HKEX" },
   // US Finance & Others
   { symbol: "JPM", name: "JPMorgan Chase", exchange: "NYSE" },
   { symbol: "V", name: "Visa Inc.", exchange: "NYSE" },
@@ -133,13 +165,110 @@ const LOCAL_STOCKS = [
   { symbol: "300124.SZ", name: "Inovance Technology 汇川技术", exchange: "SZSE" },
 ];
 
+// Check if query contains Chinese characters
+function containsChinese(text: string): boolean {
+  return /[\u4e00-\u9fa5]/.test(text);
+}
+
 function searchLocalStocks(query: string) {
   const searchTerm = query.toLowerCase();
   return LOCAL_STOCKS.filter(
     (stock) =>
       stock.symbol.toLowerCase().includes(searchTerm) ||
-      stock.name.toLowerCase().includes(searchTerm)
+      stock.name.toLowerCase().includes(searchTerm) ||
+      stock.name.includes(query) // Direct match for Chinese characters
   ).slice(0, 10);
+}
+
+// Convert Tencent market code to Yahoo Finance format
+function convertTencentSymbol(code: string, market: string): string {
+  // market: sh (Shanghai), sz (Shenzhen), hk (Hong Kong), us (US)
+  switch (market) {
+    case "sh":
+      return `${code}.SS`;
+    case "sz":
+      return `${code}.SZ`;
+    case "hk":
+      // Tencent uses format like "00700" for HK stocks
+      return `${code}.HK`;
+    case "us":
+      return code.toUpperCase();
+    default:
+      return code;
+  }
+}
+
+// Get exchange display name
+function getExchangeName(market: string): string {
+  switch (market) {
+    case "sh":
+      return "SSE";
+    case "sz":
+      return "SZSE";
+    case "hk":
+      return "HKEX";
+    case "us":
+      return "US";
+    default:
+      return market.toUpperCase();
+  }
+}
+
+// Fetch from Tencent Stock API
+async function fetchTencentStocks(query: string): Promise<Array<{ symbol: string; name: string; exchange: string }>> {
+  try {
+    const url = `https://smartbox.gtimg.cn/s3/?v=2&q=${encodeURIComponent(query)}&t=all`;
+
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "Accept": "*/*",
+        "Referer": "https://gu.qq.com/",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Tencent API error: ${response.status}`);
+    }
+
+    const text = await response.text();
+    // Response format: v_hint="market~code~?~name~?~?^market~code~?~name~?~?^..."
+    // Example: v_hint="hk~00700~51~腾讯控股~TENGXUNKONGG~GP~H^us~TCEHY~51~腾讯控股ADR~TENGXUNKONGADR~GG~U^"
+
+    const match = text.match(/v_hint="(.*)"/);
+    if (!match || !match[1]) {
+      return [];
+    }
+
+    const items = match[1].split("^").filter(Boolean);
+    const stocks: Array<{ symbol: string; name: string; exchange: string }> = [];
+
+    for (const item of items) {
+      const parts = item.split("~");
+      if (parts.length >= 4) {
+        const market = parts[0]; // hk, sh, sz, us
+        const code = parts[1];   // stock code
+        const name = parts[3];   // Chinese name
+
+        // Skip if not a valid market
+        if (!["sh", "sz", "hk", "us"].includes(market)) continue;
+
+        const symbol = convertTencentSymbol(code, market);
+        const exchange = getExchangeName(market);
+
+        stocks.push({
+          symbol,
+          name: `${name}`,
+          exchange,
+        });
+      }
+    }
+
+    return stocks.slice(0, 10);
+  } catch (error) {
+    console.error("11111 Tencent API error:", error);
+    return [];
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -150,17 +279,62 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Query parameter 'q' is required" }, { status: 400 });
   }
 
+  const isChinese = containsChinese(query);
+  const localResults = searchLocalStocks(query);
+
+  // For Chinese queries, use Tencent API (better Chinese support)
+  if (isChinese) {
+    console.log(`11111 Chinese query "${query}" - using Tencent API`);
+
+    const tencentResults = await fetchTencentStocks(query);
+
+    if (tencentResults.length > 0) {
+      // Combine with local results, Tencent first
+      const seenSymbols = new Set<string>();
+      const combinedResults = [];
+
+      for (const stock of tencentResults) {
+        if (!seenSymbols.has(stock.symbol)) {
+          seenSymbols.add(stock.symbol);
+          combinedResults.push(stock);
+        }
+      }
+
+      for (const stock of localResults) {
+        if (!seenSymbols.has(stock.symbol)) {
+          seenSymbols.add(stock.symbol);
+          combinedResults.push(stock);
+        }
+      }
+
+      return NextResponse.json({ stocks: combinedResults.slice(0, 10) });
+    }
+
+    // Fallback to local if Tencent fails
+    if (localResults.length > 0) {
+      return NextResponse.json({ stocks: localResults });
+    }
+  }
+
   try {
-    // Try Yahoo Finance API with timeout
+    // Try Yahoo Finance API for English queries
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 20000); // 15 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
 
     const url = `https://query2.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&lang=en-US&region=US&quotesCount=10&newsCount=0&listsCount=0&enableFuzzyQuery=false`;
 
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept-Encoding": "gzip, deflate, br",
+        "Referer": "https://finance.yahoo.com",
+        "Origin": "https://finance.yahoo.com",
+        "Connection": "keep-alive",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-site",
       },
       signal: controller.signal,
     });
@@ -172,15 +346,33 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    const stocks = parseYahooResponse(data);
+    const yahooStocks = parseYahooResponse(data);
 
-    // If Yahoo returns results, use them; otherwise fall back to local
-    if (stocks.length > 0) {
-      return NextResponse.json({ stocks });
+    // Combine Yahoo results with local results, dedupe by symbol
+    const seenSymbols = new Set<string>();
+    const combinedResults = [];
+
+    // Add local results first (they have Chinese names)
+    for (const stock of localResults) {
+      if (!seenSymbols.has(stock.symbol)) {
+        seenSymbols.add(stock.symbol);
+        combinedResults.push(stock);
+      }
     }
 
-    // Fall back to local search
-    const localResults = searchLocalStocks(query);
+    // Add Yahoo results
+    for (const stock of yahooStocks) {
+      if (!seenSymbols.has(stock.symbol)) {
+        seenSymbols.add(stock.symbol);
+        combinedResults.push(stock);
+      }
+    }
+
+    if (combinedResults.length > 0) {
+      return NextResponse.json({ stocks: combinedResults.slice(0, 10) });
+    }
+
+    // Return local results as fallback
     return NextResponse.json({ stocks: localResults });
 
   } catch (error) {

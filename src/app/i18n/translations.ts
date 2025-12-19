@@ -50,6 +50,18 @@ export const translations = {
     noPlansYet: "No plans yet",
     clickAddPlan: 'Click "Add Plan" to create your first stock plan.',
 
+    // Statistics
+    statistics: "Statistics",
+    savings: "Savings",
+    profit: "Profit",
+    fromBuyPlans: "from completed buy plans",
+    fromSellPlans: "from completed sell plans",
+
+    // Tabs
+    tabOngoing: "Ongoing",
+    tabDone: "Done",
+    tabAll: "All",
+
     // Language
     language: "Language",
     english: "English",
@@ -103,6 +115,18 @@ export const translations = {
     // Empty State
     noPlansYet: "暂无计划",
     clickAddPlan: "点击「添加计划」创建您的第一个股票计划",
+
+    // Statistics
+    statistics: "统计",
+    savings: "节约",
+    profit: "盈利",
+    fromBuyPlans: "来自已完成的买入计划",
+    fromSellPlans: "来自已完成的卖出计划",
+
+    // Tabs
+    tabOngoing: "进行中",
+    tabDone: "已完成",
+    tabAll: "全部",
 
     // Language
     language: "语言",

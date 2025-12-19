@@ -20,11 +20,14 @@ interface Plan {
 
 const STORAGE_KEY = "stock-plans";
 
+type TabFilter = "ongoing" | "done" | "all";
+
 export default function Plans() {
   const { t } = useLanguage();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabFilter>("ongoing");
 
   // Load plans from localStorage on mount
   useEffect(() => {
@@ -90,8 +93,86 @@ export default function Plans() {
     URL.revokeObjectURL(url);
   };
 
+  // Calculate savings and profit statistics
+  const calculateStatistics = () => {
+    let savings = 0; // From completed BUY plans
+    let profit = 0;  // From completed SELL plans
+
+    plans.forEach(plan => {
+      if (plan.status !== "done") return;
+
+      const currentP = plan.currentPrice ? parseFloat(plan.currentPrice) : 0;
+      const targetP = plan.targetPrice ? parseFloat(plan.targetPrice) : 0;
+      const shares = parseFloat(plan.shares) || 0;
+
+      if (currentP > 0 && targetP > 0 && shares > 0) {
+        // Percentage change from target to current
+        const percentChange = (targetP - currentP) / currentP;
+        // Total value = shares * current price
+        const totalValue = shares * currentP;
+        // Amount = percentage change * total value
+        const amount = percentChange * totalValue;
+
+        if (plan.action === "buy") {
+          // For buy: positive change means we saved money (bought lower than target)
+          // Actually, if target > current, we want to buy at current (lower), so savings = (target - current) * shares
+          savings += (targetP - currentP) * shares;
+        } else {
+          // For sell: positive change means we made profit (sold higher than current)
+          // If target > current, we sold at target (higher), so profit = (target - current) * shares
+          profit += (targetP - currentP) * shares;
+        }
+      }
+    });
+
+    return { savings, profit };
+  };
+
+  const { savings, profit } = calculateStatistics();
+
   return (
     <div>
+      {/* Statistics Cards */}
+      {plans.length > 0 && (savings !== 0 || profit !== 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          {/* Savings Card */}
+          <div className="p-5 rounded-xl bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/20 dark:to-emerald-800/20 border border-emerald-200 dark:border-emerald-800">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-500/20">
+                <svg className="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">{t("savings")}</p>
+                <p className={`text-2xl font-bold ${savings >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
+                  {savings >= 0 ? '+' : ''}{savings.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                </p>
+                <p className="text-xs text-emerald-500 dark:text-emerald-500 mt-0.5">{t("fromBuyPlans")}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Profit Card */}
+          <div className="p-5 rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 border border-blue-200 dark:border-blue-800">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-500/20">
+                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">{t("profit")}</p>
+                <p className={`text-2xl font-bold ${profit >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>
+                  {profit >= 0 ? '+' : ''}{profit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                </p>
+                <p className="text-xs text-blue-500 dark:text-blue-500 mt-0.5">{t("fromSellPlans")}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex justify-end gap-3 mt-6">
         {plans.length > 0 && (
@@ -123,9 +204,59 @@ export default function Plans() {
         onClose={() => setIsDialogOpen(false)}
       />
 
+      {/* Tab Filter */}
+      {plans.length > 0 && (
+        <div className="mt-6 border-b border-zinc-200 dark:border-zinc-700">
+          <nav className="flex gap-1" aria-label="Tabs">
+            {(["ongoing", "done", "all"] as TabFilter[]).map((tab) => {
+              const isActive = activeTab === tab;
+              const count = tab === "all"
+                ? plans.filter(p => p.status !== "trash").length
+                : plans.filter(p => p.status === tab).length;
+
+              const tabLabels: Record<TabFilter, string> = {
+                ongoing: t("tabOngoing"),
+                done: t("tabDone"),
+                all: t("tabAll"),
+              };
+
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                    isActive
+                      ? "border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400"
+                      : "border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300"
+                  }`}
+                >
+                  {tabLabels[tab]}
+                  <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                    isActive
+                      ? "bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
+                      : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
+                  }`}>
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      )}
+
       {/* Plans Table */}
-      <div className="mt-8 overflow-x-auto">
-        {plans.length === 0 ? (
+      <div className="mt-6 overflow-x-auto">
+        {/* Filter plans based on active tab */}
+        {(() => {
+          const visiblePlans = plans.filter(p => {
+            // Always exclude trash
+            if (p.status === "trash") return false;
+            // Filter based on active tab
+            if (activeTab === "all") return true;
+            return p.status === activeTab;
+          });
+          return visiblePlans.length === 0 ? (
           <div className="text-center py-16">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 mb-4">
               <svg className="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,7 +281,9 @@ export default function Plans() {
               </tr>
             </thead>
             <tbody>
-              {plans.map((plan, index) => {
+              {visiblePlans.map((plan) => {
+                // Find the actual index in the original plans array
+                const originalIndex = plans.findIndex(p => p === plan);
                 const currentP = plan.currentPrice ? parseFloat(plan.currentPrice) : 0;
                 const targetP = plan.targetPrice ? parseFloat(plan.targetPrice) : 0;
                 const hasChange = currentP > 0 && targetP > 0;
@@ -167,17 +300,15 @@ export default function Plans() {
                 const handleStatusChange = (newStatus: PlanStatus) => {
                   setPlans(prevPlans =>
                     prevPlans.map((p, i) =>
-                      i === index ? { ...p, status: newStatus } : p
+                      i === originalIndex ? { ...p, status: newStatus } : p
                     )
                   );
                 };
 
                 return (
                   <tr
-                    key={index}
-                    className={`border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors ${
-                      plan.status === "trash" ? "opacity-50" : ""
-                    }`}
+                    key={originalIndex}
+                    className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors"
                   >
                     <td className="py-3 px-4 text-zinc-900 dark:text-white">{plan.name}</td>
                     <td className="py-3 px-4">
@@ -228,7 +359,8 @@ export default function Plans() {
               })}
             </tbody>
           </table>
-        )}
+        );
+        })()}
       </div>
     </div>
   );
