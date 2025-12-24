@@ -19,6 +19,7 @@ interface Plan {
   targetPrice: string;
   deadline: string;
   currentPrice?: string;
+  currency?: string;
   action: "buy" | "sell";
   status: PlanStatus;
 }
@@ -150,6 +151,7 @@ export default function AddPlan({ setPlans, isOpen, onClose }: AddPlanProps) {
       targetPrice,
       deadline,
       currentPrice: stockPrice?.price?.toFixed(2),
+      currency: stockPrice?.currency || "USD",
       action,
       status: "ongoing",
     };

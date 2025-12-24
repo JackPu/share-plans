@@ -18,7 +18,7 @@ async function fetchTencentPrice(symbol: string): Promise<{
 } | null> {
   try {
     let tencentSymbol = '';
-    
+
     if (symbol.endsWith('.HK')) {
       // Hong Kong: hk00700 format
       const code = symbol.replace('.HK', '').padStart(5, '0');
@@ -35,7 +35,7 @@ async function fetchTencentPrice(symbol: string): Promise<{
     }
 
     const url = `https://qt.gtimg.cn/q=${tencentSymbol}`;
-    
+
     const response = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -51,24 +51,24 @@ async function fetchTencentPrice(symbol: string): Promise<{
 
     const text = await response.text();
     console.log(`11111 Tencent response for ${tencentSymbol}:`, text.substring(0, 200));
-    
+
     // Response format: v_hk06682="1~PARADIGM FOUR~06682~42.750~42.000~42.250~..."
     // Format: name~code~current~prevClose~open~...
     const match = text.match(/v_[^=]+=["']([^"']+)["']/);
-    
+
     if (!match || !match[1]) {
       console.error("11111 Tencent: no match found");
       return null;
     }
 
     const parts = match[1].split('~');
-    
+
     // For HK stocks: index 3 = current price, index 4 = prev close
     // For A stocks: index 3 = current price, index 4 = prev close
     if (parts.length >= 5) {
       const currentPrice = parseFloat(parts[3]);
       const prevClose = parseFloat(parts[4]);
-      
+
       if (currentPrice > 0) {
         return {
           price: currentPrice,
@@ -93,7 +93,7 @@ async function fetchSinaPrice(symbol: string): Promise<{
 } | null> {
   try {
     let sinaSymbol = '';
-    
+
     if (symbol.endsWith('.HK')) {
       // Hong Kong: hk00700 format
       const code = symbol.replace('.HK', '').padStart(5, '0');
@@ -110,7 +110,7 @@ async function fetchSinaPrice(symbol: string): Promise<{
     }
 
     const url = `https://hq.sinajs.cn/list=${sinaSymbol}`;
-    
+
     const response = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
@@ -126,24 +126,24 @@ async function fetchSinaPrice(symbol: string): Promise<{
 
     const text = await response.text();
     console.log(`11111 Sina response for ${sinaSymbol}:`, text.substring(0, 200));
-    
+
     // Response format varies by market:
     // HK: var hq_str_hk00700="TENCENT,腾讯控股,378.800,382.200,379.000,..."
     // A shares: var hq_str_sh600519="贵州茅台,1500.000,1498.880,1502.000,..."
     const match = text.match(/var hq_str_[^=]+=["']([^"']+)["']/);
-    
+
     if (!match || !match[1]) {
       console.error("11111 Sina: no match found");
       return null;
     }
 
     const parts = match[1].split(',');
-    
+
     if (symbol.endsWith('.HK') && parts.length >= 4) {
       // HK format: name, chinese name, current, prev close, open, ...
       const currentPrice = parseFloat(parts[2]);
       const prevClose = parseFloat(parts[3]);
-      
+
       if (currentPrice > 0) {
         return {
           price: currentPrice,
@@ -155,7 +155,7 @@ async function fetchSinaPrice(symbol: string): Promise<{
       // A shares format: name, open, prev close, current, ...
       const currentPrice = parseFloat(parts[3]);
       const prevClose = parseFloat(parts[2]);
-      
+
       if (currentPrice > 0) {
         return {
           price: currentPrice,
@@ -207,7 +207,7 @@ async function fetchYahooPrice(symbol: string): Promise<{
     }
 
     const data = await response.json();
-    
+
     const result = data?.chart?.result?.[0];
     if (!result) {
       console.error("11111 Yahoo: no result in response");
@@ -284,7 +284,7 @@ export async function GET(request: NextRequest) {
       const changePercent = result.previousClose ? (change / result.previousClose) * 100 : 0;
 
       console.log(`11111 Got price: ${result.price} ${result.currency}`);
-      
+
       return NextResponse.json({
         symbol: symbol,
         price: result.price,

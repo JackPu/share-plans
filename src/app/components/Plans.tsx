@@ -14,8 +14,22 @@ interface Plan {
   targetPrice: string;
   deadline: string;
   currentPrice?: string;
+  currency?: string;
   action: "buy" | "sell";
   status: PlanStatus;
+}
+
+// Fixed exchange rates to CNY
+const EXCHANGE_RATES: Record<string, number> = {
+  CNY: 1,
+  USD: 7,
+  HKD: 0.9,
+};
+
+// Convert amount to CNY
+function convertToCNY(amount: number, currency: string): number {
+  const rate = EXCHANGE_RATES[currency] || EXCHANGE_RATES["USD"];
+  return amount * rate;
 }
 
 const STORAGE_KEY = "stock-plans";
@@ -93,10 +107,10 @@ export default function Plans() {
     URL.revokeObjectURL(url);
   };
 
-  // Calculate savings and profit statistics
+  // Calculate savings and profit statistics (converted to CNY)
   const calculateStatistics = () => {
-    let savings = 0; // From completed BUY plans
-    let profit = 0;  // From completed SELL plans
+    let savings = 0; // From completed BUY plans (in CNY)
+    let profit = 0;  // From completed SELL plans (in CNY)
 
     plans.forEach(plan => {
       if (plan.status !== "done") return;
@@ -104,23 +118,20 @@ export default function Plans() {
       const currentP = plan.currentPrice ? parseFloat(plan.currentPrice) : 0;
       const targetP = plan.targetPrice ? parseFloat(plan.targetPrice) : 0;
       const shares = parseFloat(plan.shares) || 0;
+      const currency = plan.currency || "USD";
 
       if (currentP > 0 && targetP > 0 && shares > 0) {
-        // Percentage change from target to current
-        const percentChange = (targetP - currentP) / currentP;
-        // Total value = shares * current price
-        const totalValue = shares * currentP;
-        // Amount = percentage change * total value
-        const amount = percentChange * totalValue;
+        // Calculate amount in original currency
+        const amountInOriginal = (targetP - currentP) * shares;
+        // Convert to CNY
+        const amountInCNY = convertToCNY(amountInOriginal, currency);
 
         if (plan.action === "buy") {
           // For buy: positive change means we saved money (bought lower than target)
-          // Actually, if target > current, we want to buy at current (lower), so savings = (target - current) * shares
-          savings += (targetP - currentP) * shares;
+          savings += amountInCNY;
         } else {
-          // For sell: positive change means we made profit (sold higher than current)
-          // If target > current, we sold at target (higher), so profit = (target - current) * shares
-          profit += (targetP - currentP) * shares;
+          // For sell: positive change means we made profit (sold higher than target)
+          profit += amountInCNY;
         }
       }
     });
@@ -146,7 +157,7 @@ export default function Plans() {
               <div>
                 <p className="text-sm text-emerald-600 dark:text-emerald-400 font-medium">{t("savings")}</p>
                 <p className={`text-2xl font-bold ${savings >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-red-700 dark:text-red-300'}`}>
-                  {savings >= 0 ? '+' : ''}{savings.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                  {savings >= 0 ? '+' : ''}¥{savings.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-xs text-emerald-500 dark:text-emerald-500 mt-0.5">{t("fromBuyPlans")}</p>
               </div>
@@ -164,7 +175,7 @@ export default function Plans() {
               <div>
                 <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">{t("profit")}</p>
                 <p className={`text-2xl font-bold ${profit >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-red-700 dark:text-red-300'}`}>
-                  {profit >= 0 ? '+' : ''}{profit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}
+                  {profit >= 0 ? '+' : ''}¥{profit.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-xs text-blue-500 dark:text-blue-500 mt-0.5">{t("fromSellPlans")}</p>
               </div>
